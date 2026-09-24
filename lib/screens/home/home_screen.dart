@@ -1,13 +1,86 @@
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+import '../../../models/weather_model.dart';
+import '../../../services/weather_service.dart';
+import '../../../services/location_service.dart';
+
+class HomeScreen extends StatefulWidget {
+  HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Weather API service
+  final WeatherService weatherService = WeatherService();
+  final LocationService locationService = LocationService();
+
+  // API se aane wala weather data
+  WeatherModel? weatherData;
+
+  bool isLoading = false;
+  String? errorMessage;
+  String lastSearchedCity = "";
+
+  Future<void> _searchWeather(String city) async {
+
+    lastSearchedCity = city;
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final data = await weatherService.getWeather(city);
+
+      setState(() {
+        weatherData = data;
+        isLoading = false;
+        errorMessage = null;
+      });
+
+      print("City: ${data.cityName}");
+      print("Temperature: ${data.temperature}");
+      print("Feels Like: ${data.feelsLike}");
+      print("Humidity: ${data.humidity}");
+      print("Condition: ${data.condition}");
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = e.toString().replaceFirst(
+          "Exception: ",
+          "",
+        );
+        weatherData = null;
+      });
+    }
+  }
+  Future<void> _getCurrentLocation() async {
+    print("📍 Location button tapped");
+
+    try {
+      final position = await locationService.getCurrentLocation();
+
+      print("Latitude: ${position.latitude}");
+      print("Longitude: ${position.longitude}");
+    } catch (e) {
+      print("Location Error: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Weather App'),
+        actions: [
+          IconButton(
+            onPressed: _getCurrentLocation,
+            icon: const Icon(Icons.my_location),
+          ),
+        ],
       ),
 
       body: SingleChildScrollView(
@@ -36,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     children: [
 
-                      Icon(
+                      const Icon(
                         Icons.location_on,
                         color: Colors.blue,
                         size: 16,
@@ -45,16 +118,18 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 8),
 
                       Text(
-                        "Delhi India",
-                        style: TextStyle(
+                        weatherData == null
+                            ? "Delhi India"
+                            : weatherData!.cityName,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
 
-                      Spacer(),
+                      const Spacer(),
 
-                      Icon(
+                      const Icon(
                         Icons.settings,
                         color: Colors.blue,
                         size: 16,
@@ -70,10 +145,9 @@ class HomeScreen extends StatelessWidget {
 
                   Row(
                     children: [
-
                       const SizedBox(width: 10),
 
-                      Icon(
+                      const Icon(
                         Icons.search,
                         color: Colors.blue,
                         size: 20,
@@ -87,13 +161,40 @@ class HomeScreen extends StatelessWidget {
                           elevation: WidgetStateProperty.all(0),
                           backgroundColor:
                           WidgetStateProperty.all(Colors.white),
+
                           onSubmitted: (value) {
-                            print("Searching for: $value");
+                            _searchWeather(value);
                           },
                         ),
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 10),
+                  if (errorMessage != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            _searchWeather(lastSearchedCity);
+                          },
+                          child: const Text("Try Again"),
+                        ),
+                      ],
+                    ),
+
 
                   const SizedBox(height: 20),
 
@@ -102,7 +203,7 @@ class HomeScreen extends StatelessWidget {
                   // =========================
 
                   Center(
-                    child: Icon(
+                    child: const Icon(
                       Icons.sunny,
                       color: Colors.redAccent,
                       size: 20,
@@ -111,10 +212,21 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
+                  if (isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+
+
+                  const SizedBox(height: 20),
+
+                  // Temperature
                   Center(
                     child: Text(
-                      "28°C",
-                      style: TextStyle(
+                      weatherData == null
+                          ? "--°C"
+                          : "${weatherData!.temperature.round()}°C",
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -123,10 +235,13 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
+                  // Weather Condition
                   Center(
                     child: Text(
-                      "Clear Sky",
-                      style: TextStyle(
+                      weatherData == null
+                          ? "--"
+                          : weatherData!.condition,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.normal,
                       ),
@@ -135,10 +250,14 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
+                  // Feels Like
                   Center(
                     child: Text(
-                      "Feels like 28°C",
-                      style: TextStyle(
+                      weatherData == null
+                          ? "Feels like --°C"
+                          : "Feels like "
+                          "${weatherData!.feelsLike.round()}°C",
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -154,6 +273,10 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     children: [
 
+                      // =========================
+                      // Humidity Card
+                      // =========================
+
                       Expanded(
                         child: Card(
                           elevation: 10,
@@ -167,7 +290,7 @@ class HomeScreen extends StatelessWidget {
                             child: Column(
                               children: [
 
-                                Icon(
+                                const Icon(
                                   Icons.water_drop,
                                   color: Colors.blue,
                                   size: 20,
@@ -175,7 +298,7 @@ class HomeScreen extends StatelessWidget {
 
                                 const SizedBox(height: 8),
 
-                                Text(
+                                const Text(
                                   "Humidity",
                                   style: TextStyle(
                                     fontSize: 16,
@@ -186,8 +309,10 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(height: 8),
 
                                 Text(
-                                  "80%",
-                                  style: TextStyle(
+                                  weatherData == null
+                                      ? "--%"
+                                      : "${weatherData!.humidity}%",
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -200,6 +325,10 @@ class HomeScreen extends StatelessWidget {
 
                       const SizedBox(width: 12),
 
+                      // =========================
+                      // Wind Card
+                      // =========================
+
                       Expanded(
                         child: Card(
                           elevation: 10,
@@ -213,7 +342,7 @@ class HomeScreen extends StatelessWidget {
                             child: Column(
                               children: [
 
-                                Icon(
+                                const Icon(
                                   Icons.wind_power,
                                   color: Colors.blue,
                                   size: 20,
@@ -221,7 +350,7 @@ class HomeScreen extends StatelessWidget {
 
                                 const SizedBox(height: 8),
 
-                                Text(
+                                const Text(
                                   "Wind",
                                   style: TextStyle(
                                     fontSize: 16,
@@ -232,8 +361,10 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(height: 8),
 
                                 Text(
-                                  "12 KM/h",
-                                  style: TextStyle(
+                                  weatherData == null
+                                      ? "-- km/h"
+                                      : "${(weatherData!.windSpeed * 3.6).toStringAsFixed(1)} km/h",
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -252,7 +383,7 @@ class HomeScreen extends StatelessWidget {
                   // Hourly Forecast Heading
                   // =========================
 
-                  Center(
+                  const Center(
                     child: Text(
                       "Hourly Forecast",
                       style: TextStyle(
@@ -291,7 +422,7 @@ class HomeScreen extends StatelessWidget {
                               child: Column(
                                 children: [
 
-                                  Text(
+                                  const Text(
                                     "10:00 AM",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -301,7 +432,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Icon(
+                                  const Icon(
                                     Icons.sunny,
                                     color: Colors.red,
                                     size: 14,
@@ -309,7 +440,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Text(
+                                  const Text(
                                     "28°C",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -341,7 +472,7 @@ class HomeScreen extends StatelessWidget {
                               child: Column(
                                 children: [
 
-                                  Text(
+                                  const Text(
                                     "11:00 AM",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -351,7 +482,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Icon(
+                                  const Icon(
                                     Icons.sunny,
                                     color: Colors.red,
                                     size: 14,
@@ -359,7 +490,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Text(
+                                  const Text(
                                     "29°C",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -391,7 +522,7 @@ class HomeScreen extends StatelessWidget {
                               child: Column(
                                 children: [
 
-                                  Text(
+                                  const Text(
                                     "12:00 PM",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -401,7 +532,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Icon(
+                                  const Icon(
                                     Icons.sunny,
                                     color: Colors.red,
                                     size: 14,
@@ -409,7 +540,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Text(
+                                  const Text(
                                     "30°C",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -441,7 +572,7 @@ class HomeScreen extends StatelessWidget {
                               child: Column(
                                 children: [
 
-                                  Text(
+                                  const Text(
                                     "1:00 PM",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -451,7 +582,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Icon(
+                                  const Icon(
                                     Icons.sunny,
                                     color: Colors.red,
                                     size: 14,
@@ -459,7 +590,7 @@ class HomeScreen extends StatelessWidget {
 
                                   const SizedBox(height: 8),
 
-                                  Text(
+                                  const Text(
                                     "31°C",
                                     style: TextStyle(
                                       fontSize: 14,
@@ -477,14 +608,13 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  Text(
+                  const Text(
                     " 5 Day Forecast",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                 ],
               ),
             ),
