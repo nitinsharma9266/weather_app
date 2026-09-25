@@ -37,4 +37,38 @@ class WeatherService {
       rethrow;
     }
   }
+
+  Future<WeatherModel> getWeatherByCoordinates(
+      double latitude,
+      double longitude,
+      ) async {
+    final String? apiKey = dotenv.env['OPENWEATHER_API_KEY'];
+
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('OpenWeather API key not found');
+    }
+
+    final Uri url = Uri.parse(
+      'https://api.openweathermap.org/data/2.5/weather'
+          '?lat=$latitude'
+          '&lon=$longitude'
+          '&appid=$apiKey'
+          '&units=metric',
+    );
+
+    final response = await http.get(url);
+
+    print('Coordinate Weather Status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> weatherData =
+      jsonDecode(response.body);
+
+      return WeatherModel.fromJson(weatherData);
+    } else {
+      throw Exception(
+        'Weather request failed: ${response.statusCode}',
+      );
+    }
+  }
 }

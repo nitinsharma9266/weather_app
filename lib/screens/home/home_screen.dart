@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../models/weather_model.dart';
 import '../../../services/weather_service.dart';
 import '../../../services/location_service.dart';
+import '../../models/location_search_model.dart';
+import '../../services/location_search_service.dart';
+import 'dart:async';
+
 
 class HomeScreen extends StatefulWidget {
   HomeScreen({super.key});
@@ -16,12 +20,23 @@ class _HomeScreenState extends State<HomeScreen> {
   final WeatherService weatherService = WeatherService();
   final LocationService locationService = LocationService();
 
+  Timer? _searchDebounce;
+
+  final LocationSearchService locationSearchService = LocationSearchService();
+
+
+  List<LocationSearchModel> searchResults = [];
+  bool isSearchingLocations = false;
+
   // API se aane wala weather data
   WeatherModel? weatherData;
 
   bool isLoading = false;
   String? errorMessage;
   String lastSearchedCity = "";
+  bool isGettingLocation = false;
+
+  final TextEditingController searchController = TextEditingController();
 
   Future<void> _searchWeather(String city) async {
 
@@ -58,18 +73,101 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
   Future<void> _getCurrentLocation() async {
-    print("📍 Location button tapped");
+    setState(() {
+      isGettingLocation = true;
+    });
 
     try {
       final position = await locationService.getCurrentLocation();
 
+      final data = await weatherService.getWeatherByCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      setState(() {
+        weatherData = data;
+        errorMessage = null;
+        isLoading = false;
+      });
+
+      searchController.text = data.cityName;
+
       print("Latitude: ${position.latitude}");
       print("Longitude: ${position.longitude}");
+      print("City: ${data.cityName}");
+      print("Temperature: ${data.temperature}");
     } catch (e) {
+      setState(() {
+        errorMessage = e.toString().replaceFirst(
+          "Exception: ",
+          "",
+        );
+      });
+
       print("Location Error: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          isGettingLocation = false;
+        });
+      }
     }
   }
 
+  Future<void> _searchLocations(String query) async {
+    // Purana timer cancel karo
+    _searchDebounce?.cancel();
+
+    // Agar query chhoti hai to suggestions hata do
+    if (query.trim().length < 2) {
+      setState(() {
+        searchResults = [];
+        isSearchingLocations = false;
+      });
+      return;
+    }
+
+    // 500 milliseconds wait karo
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 500),
+          () async {
+        setState(() {
+          isSearchingLocations = true;
+        });
+
+        try {
+          final results =
+          await locationSearchService.searchLocations(query);
+
+          if (!mounted) return;
+
+          setState(() {
+            searchResults = results;
+            isSearchingLocations = false;
+          });
+
+          print("Found locations: ${results.length}");
+        } catch (e) {
+          if (!mounted) return;
+
+          setState(() {
+            searchResults = [];
+            isSearchingLocations = false;
+          });
+
+          print("Location Search Error: $e");
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    searchController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,8 +253,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(width: 8),
 
+                      // Seartch Bar
+
                       Expanded(
                         child: SearchBar(
+
+                          onChanged: (value) {
+                            _searchLocations(value);
+                          },
+                          controller: searchController,
                           hintText: "Search for city",
                           elevation: WidgetStateProperty.all(0),
                           backgroundColor:
@@ -169,6 +274,77 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                  if (isSearchingLocations)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+
+                  if (!isSearchingLocations && searchResults.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 8,
+                            color: Colors.black12,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: searchResults.map((location) {
+                          return ListTile(
+                            leading: const Icon(Icons.location_on),
+                            title: Text(location.name),
+                            subtitle: Text(
+                              [
+                                if (location.state != null) location.state!,
+                                location.country,
+                              ].join(', '),
+                            ),
+                            onTap: () async {
+                              searchController.text = location.name;
+
+                              setState(() {
+                                searchResults = [];
+                                isLoading = true;
+                                errorMessage = null;
+                              });
+
+                              try {
+                                final data = await weatherService.getWeatherByCoordinates(
+                                  location.latitude,
+                                  location.longitude,
+                                );
+
+                                setState(() {
+                                  weatherData = data;
+                                  isLoading = false;
+                                });
+
+                                print('Selected Location: ${location.name}');
+                                print('Latitude: ${location.latitude}');
+                                print('Longitude: ${location.longitude}');
+                                print('Weather City: ${data.cityName}');
+                                print('Temperature: ${data.temperature}');
+                              } catch (e) {
+                                setState(() {
+                                  isLoading = false;
+                                  errorMessage = e.toString().replaceFirst(
+                                    'Exception: ',
+                                    '',
+                                  );
+                                });
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
 
                   const SizedBox(height: 10),
                   if (errorMessage != null)
