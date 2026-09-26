@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/constants/api_constants.dart';
 import '../models/location_search_model.dart';
 
 class LocationSearchService {
@@ -20,7 +21,8 @@ class LocationSearchService {
     }
 
     final Uri url = Uri.parse(
-      'https://api.openweathermap.org/geo/1.0/direct'
+      '${ApiConstants.geocodingBaseUrl}'
+          '${ApiConstants.directGeocodingEndpoint}'
           '?q=${Uri.encodeComponent(query)}'
           '&limit=5'
           '&appid=$apiKey',
