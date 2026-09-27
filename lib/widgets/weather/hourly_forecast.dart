@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/forecast_model.dart';
@@ -16,79 +15,260 @@ class HourlyForecast extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (forecasts.isEmpty) {
-      return const Center(
-        child: Text(
-          AppStrings.forecastDataNotAvailable,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: forecasts.map((forecast) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: SizedBox(
-              width: 100,
-              child: Card(
-                elevation: 3,
-                color: AppColors.white,
-                shadowColor: AppColors.shadow,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+    final bool isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final Color primaryText =
+    isDark ? Colors.white : Colors.black87;
+
+    final Color secondaryText =
+    isDark ? Colors.white70 : Colors.black54;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ======================================================
+        // SECTION HEADER
+        // ======================================================
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Today's Forecast",
+              style: TextStyle(
+                color: primaryText,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+
+            TextButton(
+              onPressed: () {
+                // Forecast screen navigation
+                // next step mein connect karenge.
+              },
+              child: const Text(
+                'See All',
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // ======================================================
+        // HOURLY CARDS
+        // ======================================================
+
+        SizedBox(
+          height: 175,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: forecasts.length,
+            itemBuilder: (context, index) {
+              final forecast = forecasts[index];
+
+              return TweenAnimationBuilder<double>(
+                duration: Duration(
+                  milliseconds: 400 + (index * 80),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 8,
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        Helpers.formatForecastTime(
-                          forecast.time,
-                        ),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
+                tween: Tween<double>(
+                  begin: 0,
+                  end: 1,
+                ),
+                curve: Curves.easeOutCubic,
+                builder: (
+                    context,
+                    value,
+                    child,
+                    ) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(
+                        0,
+                        20 * (1 - value),
                       ),
-                      const SizedBox(height: 8),
-                      Image.network(
-                        'https://openweathermap.org/img/wn/'
-                            '${forecast.icon}@2x.png',
-                        width: 45,
-                        height: 45,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "${forecast.temperature.round()}°C",
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "${forecast.rainProbability}% ${AppStrings.rain}",
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.grey,
-                        ),
-                      ),
-                    ],
+                      child: child,
+                    ),
+                  );
+                },
+                child: _HourlyCard(
+                  forecast: forecast,
+                  isDark: isDark,
+                  primaryText: primaryText,
+                  secondaryText: secondaryText,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================
+// HOURLY CARD
+// ============================================================
+
+class _HourlyCard extends StatelessWidget {
+  final ForecastModel forecast;
+  final bool isDark;
+  final Color primaryText;
+  final Color secondaryText;
+
+  const _HourlyCard({
+    required this.forecast,
+    required this.isDark,
+    required this.primaryText,
+    required this.secondaryText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color cardColor = isDark
+        ? const Color(0xFF101D2A)
+        : Colors.white;
+
+    final Color accentColor = isDark
+        ? const Color(0xFF55B9FF)
+        : Theme.of(context).colorScheme.primary;
+
+    return Container(
+      width: 108,
+      margin: const EdgeInsets.only(
+        right: 12,
+      ),
+      padding: const EdgeInsets.symmetric(
+        vertical: 13,
+        horizontal: 8,
+      ),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.04),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.24 : 0.07,
+            ),
+            blurRadius: 13,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ====================================================
+          // TIME
+          // ====================================================
+
+          Text(
+            Helpers.formatForecastTime(
+              forecast.time,
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: primaryText,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // ====================================================
+          // WEATHER ICON
+          // ====================================================
+
+          Container(
+            width: 55,
+            height: 55,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(
+                alpha: isDark ? 0.10 : 0.07,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Image.network(
+              'https://openweathermap.org/img/wn/'
+                  '${forecast.icon}@2x.png',
+              width: 48,
+              height: 48,
+              errorBuilder: (
+                  context,
+                  error,
+                  stackTrace,
+                  ) {
+                return Icon(
+                  Icons.cloud,
+                  color: accentColor,
+                  size: 30,
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 7),
+
+          // ====================================================
+          // TEMPERATURE
+          // ====================================================
+
+          Text(
+            '${forecast.temperature.round()}°C',
+            style: TextStyle(
+              color: primaryText,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          // ====================================================
+          // RAIN
+          // ====================================================
+
+          Row(
+            mainAxisAlignment:
+            MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.water_drop_outlined,
+                color: accentColor,
+                size: 12,
+              ),
+
+              const SizedBox(width: 2),
+
+              Flexible(
+                child: Text(
+                  '${forecast.rainProbability}% '
+                      '${AppStrings.rain}',
+                  maxLines: 1,
+                  overflow:
+                  TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: secondaryText,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            ],
+          ),
+        ],
       ),
     );
   }
