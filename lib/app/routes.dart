@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../screens/home/home_screen.dart';
+import '../screens/home/main_navigation_screen.dart';
 import '../screens/home/profile_screen.dart';
 import '../screens/home/welcome_screen.dart';
-import '../screens/search/search_screen.dart';
-import '../screens/forecast/forecast_screen.dart';
 import '../screens/settings/settings_screen.dart';
 
 class AppRoutes {
@@ -18,10 +16,21 @@ class AppRoutes {
   static Map<String, WidgetBuilder> get routes {
     return {
       welcome: (context) => const WelcomeScreen(),
-      home: (context) => const HomeScreen(),
-      search: (context) => const SearchScreen(),
-      forecast: (context) => const ForecastScreen(),
+
+      home: (context) => const MainNavigationScreen(
+        initialIndex: 0,
+      ),
+
+      search: (context) => const MainNavigationScreen(
+        initialIndex: 2,
+      ),
+
+      forecast: (context) => const MainNavigationScreen(
+        initialIndex: 1,
+      ),
+
       settings: (context) => const SettingsScreen(),
+
       profile: (context) => const ProfileScreen(),
     };
   }

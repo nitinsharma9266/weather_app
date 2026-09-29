@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app.dart';
+import '../../app/routes.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/forecast_model.dart';
@@ -11,6 +13,15 @@ class HourlyForecast extends StatelessWidget {
     super.key,
     required this.forecasts,
   });
+
+  String _formatTemperature(double temperature) {
+    if (WeatherApp.temperatureUnit.value == 'F') {
+      final fahrenheit = (temperature * 9 / 5) + 32;
+      return '${fahrenheit.round()}°F';
+    }
+
+    return '${temperature.round()}°C';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,107 +38,103 @@ class HourlyForecast extends StatelessWidget {
     final Color secondaryText =
     isDark ? Colors.white70 : Colors.black54;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ======================================================
-        // SECTION HEADER
-        // ======================================================
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<String>(
+      valueListenable: WeatherApp.temperatureUnit,
+      builder: (context, temperatureUnit, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Today's Forecast",
-              style: TextStyle(
-                color: primaryText,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-
-            TextButton(
-              onPressed: () {
-                // Forecast screen navigation
-                // next step mein connect karenge.
-              },
-              child: const Text(
-                'See All',
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // ======================================================
-        // HOURLY CARDS
-        // ======================================================
-
-        SizedBox(
-          height: 175,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: forecasts.length,
-            itemBuilder: (context, index) {
-              final forecast = forecasts[index];
-
-              return TweenAnimationBuilder<double>(
-                duration: Duration(
-                  milliseconds: 400 + (index * 80),
+            Row(
+              mainAxisAlignment:
+              MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Today's Forecast",
+                  style: TextStyle(
+                    color: primaryText,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                tween: Tween<double>(
-                  begin: 0,
-                  end: 1,
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.forecast,
+                    );
+                  },
+                  child: const Text('See All'),
                 ),
-                curve: Curves.easeOutCubic,
-                builder: (
-                    context,
-                    value,
-                    child,
-                    ) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(
-                        0,
-                        20 * (1 - value),
-                      ),
-                      child: child,
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 175,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics:
+                const BouncingScrollPhysics(),
+                itemCount: forecasts.length,
+                itemBuilder: (context, index) {
+                  final forecast = forecasts[index];
+
+                  return TweenAnimationBuilder<double>(
+                    duration: Duration(
+                      milliseconds: 400 + (index * 80),
+                    ),
+                    tween: Tween<double>(
+                      begin: 0,
+                      end: 1,
+                    ),
+                    curve: Curves.easeOutCubic,
+                    builder: (
+                        context,
+                        value,
+                        child,
+                        ) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(
+                            0,
+                            20 * (1 - value),
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _HourlyCard(
+                      forecast: forecast,
+                      isDark: isDark,
+                      primaryText: primaryText,
+                      secondaryText: secondaryText,
+                      formatTemperature:
+                      _formatTemperature,
                     ),
                   );
                 },
-                child: _HourlyCard(
-                  forecast: forecast,
-                  isDark: isDark,
-                  primaryText: primaryText,
-                  secondaryText: secondaryText,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
-
-// ============================================================
-// HOURLY CARD
-// ============================================================
 
 class _HourlyCard extends StatelessWidget {
   final ForecastModel forecast;
   final bool isDark;
   final Color primaryText;
   final Color secondaryText;
+  final String Function(double) formatTemperature;
 
   const _HourlyCard({
     required this.forecast,
     required this.isDark,
     required this.primaryText,
     required this.secondaryText,
+    required this.formatTemperature,
   });
 
   @override
@@ -169,10 +176,6 @@ class _HourlyCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ====================================================
-          // TIME
-          // ====================================================
-
           Text(
             Helpers.formatForecastTime(
               forecast.time,
@@ -184,13 +187,7 @@ class _HourlyCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // ====================================================
-          // WEATHER ICON
-          // ====================================================
-
           Container(
             width: 55,
             height: 55,
@@ -218,28 +215,18 @@ class _HourlyCard extends StatelessWidget {
               },
             ),
           ),
-
           const SizedBox(height: 7),
-
-          // ====================================================
-          // TEMPERATURE
-          // ====================================================
-
           Text(
-            '${forecast.temperature.round()}°C',
+            formatTemperature(
+              forecast.temperature,
+            ),
             style: TextStyle(
               color: primaryText,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 4),
-
-          // ====================================================
-          // RAIN
-          // ====================================================
-
           Row(
             mainAxisAlignment:
             MainAxisAlignment.center,
@@ -249,9 +236,7 @@ class _HourlyCard extends StatelessWidget {
                 color: accentColor,
                 size: 12,
               ),
-
               const SizedBox(width: 2),
-
               Flexible(
                 child: Text(
                   '${forecast.rainProbability}% '

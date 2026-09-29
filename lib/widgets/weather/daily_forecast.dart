@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app.dart';
+import '../../app/routes.dart';
 import '../../core/constants/app_strings.dart';
 import '../../models/daily_forecast_model.dart';
 
@@ -10,6 +12,15 @@ class DailyForecast extends StatelessWidget {
     super.key,
     required this.forecasts,
   });
+
+  String _formatTemperature(double temperature) {
+    if (WeatherApp.temperatureUnit.value == 'F') {
+      final fahrenheit = (temperature * 9 / 5) + 32;
+      return '${fahrenheit.round()}°F';
+    }
+
+    return '${temperature.round()}°C';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,100 +37,99 @@ class DailyForecast extends StatelessWidget {
     final Color secondaryText =
     isDark ? Colors.white70 : Colors.black54;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ======================================================
-        // SECTION HEADER
-        // ======================================================
-
-        Row(
-          mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<String>(
+      valueListenable: WeatherApp.temperatureUnit,
+      builder: (context, temperatureUnit, child) {
+        return Column(
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
           children: [
-            Text(
-              AppStrings.fiveDayForecast,
-              style: TextStyle(
-                color: primaryText,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
+            Row(
+              mainAxisAlignment:
+              MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  AppStrings.fiveDayForecast,
+                  style: TextStyle(
+                    color: primaryText,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.forecast,
+                    );
+                  },
+                  child: const Text('See All'),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            ...forecasts.asMap().entries.map(
+                  (entry) {
+                final int index = entry.key;
+                final DailyForecastModel day =
+                    entry.value;
 
-            TextButton(
-              onPressed: () {
-                // Forecast screen ko next step mein connect karenge.
+                return TweenAnimationBuilder<double>(
+                  duration: Duration(
+                    milliseconds: 450 + (index * 80),
+                  ),
+                  tween: Tween<double>(
+                    begin: 0,
+                    end: 1,
+                  ),
+                  curve: Curves.easeOutCubic,
+                  builder: (
+                      context,
+                      value,
+                      child,
+                      ) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(
+                          0,
+                          18 * (1 - value),
+                        ),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _DailyForecastCard(
+                    day: day,
+                    isDark: isDark,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    formatTemperature:
+                    _formatTemperature,
+                  ),
+                );
               },
-              child: const Text(
-                'See All',
-              ),
             ),
           ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // ======================================================
-        // DAILY CARDS
-        // ======================================================
-
-        ...forecasts.asMap().entries.map((entry) {
-          final int index = entry.key;
-          final DailyForecastModel day = entry.value;
-
-          return TweenAnimationBuilder<double>(
-            duration: Duration(
-              milliseconds: 450 + (index * 80),
-            ),
-            tween: Tween<double>(
-              begin: 0,
-              end: 1,
-            ),
-            curve: Curves.easeOutCubic,
-            builder: (
-                context,
-                value,
-                child,
-                ) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(
-                    0,
-                    18 * (1 - value),
-                  ),
-                  child: child,
-                ),
-              );
-            },
-            child: _DailyForecastCard(
-              day: day,
-              isDark: isDark,
-              primaryText: primaryText,
-              secondaryText: secondaryText,
-            ),
-          );
-        }),
-      ],
+        );
+      },
     );
   }
 }
-
-// ============================================================
-// DAILY FORECAST CARD
-// ============================================================
 
 class _DailyForecastCard extends StatelessWidget {
   final DailyForecastModel day;
   final bool isDark;
   final Color primaryText;
   final Color secondaryText;
+  final String Function(double) formatTemperature;
 
   const _DailyForecastCard({
     required this.day,
     required this.isDark,
     required this.primaryText,
     required this.secondaryText,
+    required this.formatTemperature,
   });
 
   @override
@@ -132,7 +142,8 @@ class _DailyForecastCard extends StatelessWidget {
         ? const Color(0xFF55B9FF)
         : Theme.of(context).colorScheme.primary;
 
-    final String dayName = _getDayName(day.date);
+    final String dayName =
+    _getDayName(day.date);
 
     return Container(
       margin: const EdgeInsets.only(
@@ -162,10 +173,6 @@ class _DailyForecastCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // ==================================================
-          // DAY
-          // ==================================================
-
           SizedBox(
             width: 52,
             child: Text(
@@ -177,13 +184,7 @@ class _DailyForecastCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 8),
-
-          // ==================================================
-          // WEATHER ICON
-          // ==================================================
-
           Container(
             width: 54,
             height: 54,
@@ -211,13 +212,7 @@ class _DailyForecastCard extends StatelessWidget {
               },
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // ==================================================
-          // CONDITION + RAIN
-          // ==================================================
-
           Expanded(
             child: Column(
               crossAxisAlignment:
@@ -226,16 +221,15 @@ class _DailyForecastCard extends StatelessWidget {
                 Text(
                   day.condition,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  overflow:
+                  TextOverflow.ellipsis,
                   style: TextStyle(
                     color: primaryText,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Row(
                   children: [
                     Icon(
@@ -243,9 +237,7 @@ class _DailyForecastCard extends StatelessWidget {
                       color: accentColor,
                       size: 13,
                     ),
-
                     const SizedBox(width: 3),
-
                     Flexible(
                       child: Text(
                         '${day.minRainProbability}% - '
@@ -267,15 +259,9 @@ class _DailyForecastCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(width: 10),
-
-          // ==================================================
-          // TEMPERATURE
-          // ==================================================
-
           Text(
-            '${day.temperature.round()}°C',
+            formatTemperature(day.temperature),
             style: TextStyle(
               color: primaryText,
               fontSize: 18,
@@ -286,10 +272,6 @@ class _DailyForecastCard extends StatelessWidget {
       ),
     );
   }
-
-  // ==========================================================
-  // DAY NAME
-  // ==========================================================
 
   String _getDayName(DateTime date) {
     const List<String> days = [

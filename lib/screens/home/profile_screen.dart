@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../../app/app.dart';
-import '../../app/routes.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,8 +9,71 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // ============================================================
+  // USER PROFILE DATA
+  // ============================================================
+
   String userName = 'Weather User';
+  String phoneNumber = '';
   String email = 'user@example.com';
+
+  // ============================================================
+  // LOAD SAVED PROFILE
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedName = prefs.getString('user_name');
+    final savedPhone = prefs.getString('user_phone');
+    final savedEmail = prefs.getString('user_email');
+
+    if (!mounted) return;
+
+    setState(() {
+      if (savedName != null && savedName.isNotEmpty) {
+        userName = savedName;
+      }
+
+      if (savedPhone != null) {
+        phoneNumber = savedPhone;
+      }
+
+      if (savedEmail != null && savedEmail.isNotEmpty) {
+        email = savedEmail;
+      }
+    });
+  }
+
+  // ============================================================
+  // SAVE PROFILE
+  // ============================================================
+
+  Future<void> _saveProfile({
+    required String name,
+    required String phone,
+    required String userEmail,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('user_name', name);
+    await prefs.setString('user_phone', phone);
+    await prefs.setString('user_email', userEmail);
+
+    if (!mounted) return;
+
+    setState(() {
+      userName = name;
+      phoneNumber = phone;
+      email = userEmail;
+    });
+  }
 
   // ============================================================
   // EDIT PROFILE
@@ -23,6 +84,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       text: userName,
     );
 
+    final phoneController = TextEditingController(
+      text: phoneNumber,
+    );
+
     final emailController = TextEditingController(
       text: email,
     );
@@ -31,136 +96,134 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Profile'),
-
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                ),
-              ),
-            ],
+          title: const Text(
+            'Edit Profile',
           ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // NAME
+                TextField(
+                  controller: nameController,
+                  textCapitalization:
+                  TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                    ),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
 
+                const SizedBox(height: 15),
+
+                // PHONE
+                TextField(
+                  controller: phoneController,
+                  keyboardType:
+                  TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Mobile Number',
+                    prefixIcon: Icon(
+                      Icons.phone_outlined,
+                    ),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                // EMAIL
+                TextField(
+                  controller: emailController,
+                  keyboardType:
+                  TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                    ),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
           actions: [
+            // CANCEL
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Cancel'),
+              child: const Text(
+                'Cancel',
+              ),
             ),
 
+            // SAVE
             ElevatedButton(
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) {
+              onPressed: () async {
+                final name =
+                nameController.text.trim();
+
+                final phone =
+                phoneController.text.trim();
+
+                final userEmail =
+                emailController.text.trim();
+
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Please enter your name',
+                      ),
+                    ),
+                  );
                   return;
                 }
 
-                setState(() {
-                  userName = nameController.text.trim();
-                  email = emailController.text.trim();
-                });
+                if (userEmail.isEmpty) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Please enter your email',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                await _saveProfile(
+                  name: name,
+                  phone: phone,
+                  userEmail: userEmail,
+                );
+
+                if (!context.mounted) return;
 
                 Navigator.pop(context);
+
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Profile updated successfully',
+                    ),
+                  ),
+                );
               },
-              child: const Text('Save'),
+              child: const Text(
+                'Save',
+              ),
             ),
           ],
         );
       },
-    );
-  }
-
-  // ============================================================
-  // TEMPERATURE UNIT
-  // ============================================================
-
-  void _selectTemperatureUnit() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Temperature Unit'),
-
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: const Text('Celsius (°C)'),
-                value: 'C',
-                groupValue: WeatherApp.temperatureUnit.value,
-                onChanged: (value) {
-                  if (value == null) return;
-
-                  WeatherApp.temperatureUnit.value = value;
-
-                  Navigator.pop(context);
-
-                  setState(() {});
-                },
-              ),
-
-              RadioListTile<String>(
-                title: const Text('Fahrenheit (°F)'),
-                value: 'F',
-                groupValue: WeatherApp.temperatureUnit.value,
-                onChanged: (value) {
-                  if (value == null) return;
-
-                  WeatherApp.temperatureUnit.value = value;
-
-                  Navigator.pop(context);
-
-                  setState(() {});
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ============================================================
-  // DARK MODE
-  // ============================================================
-
-  void _toggleDarkMode(bool value) {
-    WeatherApp.themeMode.value =
-    value ? ThemeMode.dark : ThemeMode.light;
-
-    setState(() {});
-  }
-
-  // ============================================================
-  // ABOUT APP
-  // ============================================================
-
-  void _showAboutApp() {
-    showAboutDialog(
-      context: context,
-      applicationName: 'Weather App',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(
-        Icons.cloud,
-        size: 45,
-      ),
-      applicationLegalese: '© 2026 Weather App',
     );
   }
 
@@ -170,28 +233,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode =
-        WeatherApp.themeMode.value == ThemeMode.dark;
-
-    final String temperatureUnit =
-    WeatherApp.temperatureUnit.value == 'C'
-        ? 'Celsius (°C)'
-        : 'Fahrenheit (°F)';
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text(
+          'Profile',
+        ),
       ),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-
         child: Column(
           children: [
-            // ==================================================
             // PROFILE PHOTO
-            // ==================================================
-
             const CircleAvatar(
               radius: 55,
               child: Icon(
@@ -202,159 +255,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 15),
 
-            // ==================================================
-            // USER NAME
-            // ==================================================
-
+            // NAME
             Text(
               userName,
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
+            const SizedBox(height: 8),
+
+            // PHONE
+            if (phoneNumber.isNotEmpty)
+              Row(
+                mainAxisAlignment:
+                MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.phone_outlined,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    phoneNumber,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.color,
+                    ),
+                  ),
+                ],
+              ),
+
             const SizedBox(height: 5),
 
-            // ==================================================
             // EMAIL
-            // ==================================================
-
-            Text(
-              email,
-              style: TextStyle(
-                fontSize: 15,
-                color: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.color,
-              ),
+            Row(
+              mainAxisAlignment:
+              MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.email_outlined,
+                  size: 17,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    email,
+                    textAlign: TextAlign.center,
+                    overflow:
+                    TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.color,
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 30),
 
-            // ==================================================
             // EDIT PROFILE
-            // ==================================================
-
             Card(
               child: ListTile(
                 leading: const Icon(
-                  Icons.edit,
+                  Icons.edit_outlined,
                 ),
                 title: const Text(
                   'Edit Profile',
                 ),
                 subtitle: const Text(
-                  'Change your name and email',
+                  'Change your name, phone and email',
                 ),
                 trailing: const Icon(
                   Icons.arrow_forward_ios,
                   size: 18,
                 ),
                 onTap: _editProfile,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ==================================================
-            // TEMPERATURE UNIT
-            // ==================================================
-
-            Card(
-              child: ListTile(
-                leading: const Icon(
-                  Icons.thermostat,
-                ),
-                title: const Text(
-                  'Temperature Unit',
-                ),
-                subtitle: Text(
-                  temperatureUnit,
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
-                ),
-                onTap: _selectTemperatureUnit,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ==================================================
-            // DARK MODE
-            // ==================================================
-
-            Card(
-              child: SwitchListTile(
-                secondary: const Icon(
-                  Icons.dark_mode,
-                ),
-                title: const Text(
-                  'Dark Mode',
-                ),
-                subtitle: const Text(
-                  'Change app appearance',
-                ),
-                value: isDarkMode,
-                onChanged: _toggleDarkMode,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ==================================================
-            // SETTINGS
-            // ==================================================
-
-            Card(
-              child: ListTile(
-                leading: const Icon(
-                  Icons.settings,
-                ),
-                title: const Text(
-                  'Settings',
-                ),
-                subtitle: const Text(
-                  'Manage app settings',
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
-                ),
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.settings,
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ==================================================
-            // ABOUT
-            // ==================================================
-
-            Card(
-              child: ListTile(
-                leading: const Icon(
-                  Icons.info_outline,
-                ),
-                title: const Text(
-                  'About App',
-                ),
-                subtitle: const Text(
-                  'App information',
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
-                ),
-                onTap: _showAboutApp,
               ),
             ),
           ],
