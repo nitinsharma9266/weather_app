@@ -81,7 +81,7 @@ This makes the project easier to understand, maintain, test, and extend with new
 The home screen displays the current location, current weather conditions, temperature, humidity, wind speed, pressure, weather insights, hourly forecast, and 5-day forecast.
 
 <p align="center">
-  <img src="assets/images/screenshots/home_screen.png" width="250">
+  <img src="assets/images/screenshots/home_screen.jpeg" width="250">
 </p>
 
 ---
@@ -91,7 +91,7 @@ The home screen displays the current location, current weather conditions, tempe
 Users can search for a city and get weather information for the selected location.
 
 <p align="center">
-  <img src="assets/images/screenshots/search_screen.png" width="250">
+  <img src="assets/images/screenshots/search_screen.jpeg" width="250">
 </p>
 
 ---
@@ -101,7 +101,7 @@ Users can search for a city and get weather information for the selected locatio
 The forecast screen provides detailed hourly and daily weather information.
 
 <p align="center">
-  <img src="assets/images/screenshots/forecast_screen.png" width="250">
+  <img src="assets/images/screenshots/forecast_screen.jpeg" width="250">
 </p>
 
 ---
@@ -111,7 +111,7 @@ The forecast screen provides detailed hourly and daily weather information.
 The profile screen allows users to manage their profile information and access application preferences.
 
 <p align="center">
-  <img src="assets/images/screenshots/profile_screen.png" width="250">
+  <img src="assets/images/screenshots/profile_screen.jpeg" width="250">
 </p>
 
 ---
@@ -121,7 +121,7 @@ The profile screen allows users to manage their profile information and access a
 The settings screen provides options such as dark mode, temperature unit, location settings, and application information.
 
 <p align="center">
-  <img src="assets/images/screenshots/settings_screen.png" width="250">
+  <img src="assets/images/screenshots/settings_screen.jpeg" width="250">
 </p>
 
 ---
@@ -131,7 +131,7 @@ The settings screen provides options such as dark mode, temperature unit, locati
 The application also supports a dark theme for a comfortable viewing experience in low-light environments.
 
 <p align="center">
-  <img src="assets/images/screenshots/dark_mode.png" width="250">
+  <img src="assets/images/screenshots/dark_mode.jpeg" width="250">
 </p>
 
 ---
