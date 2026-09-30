@@ -124,17 +124,7 @@ The settings screen provides options such as dark mode, temperature unit, locati
   <img src="assets/images/screenshots/settings_screen.jpeg" width="250">
 </p>
 
----
 
-### 🌙 Dark Mode
-
-The application also supports a dark theme for a comfortable viewing experience in low-light environments.
-
-<p align="center">
-  <img src="assets/images/screenshots/dark_mode.jpeg" width="250">
-</p>
-
----
 ---
 
 ## 🏗️ Project Structure
