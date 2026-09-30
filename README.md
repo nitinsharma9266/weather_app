@@ -221,7 +221,7 @@ weather_app/
 ---
 
 
-## 🛠️ Technology Stack
+### 🛠️ Technology Stack
 
 | Technology | Purpose |
 |---|---|
@@ -233,7 +233,7 @@ weather_app/
 
 ---
 
-## 📦 Flutter Packages
+### 📦 Flutter Packages
 
 The application uses the following packages:
 
@@ -247,7 +247,7 @@ The application uses the following packages:
 
 ---
 
-## 🔌 API Integration
+### 🔌 API Integration
 
 This application uses the **OpenWeather API** to retrieve weather information.
 
@@ -286,7 +286,7 @@ Flutter UI
 ---
 
 
-## 🚀 Installation & Setup
+### 🚀 Installation & Setup
 
 Follow the steps below to run the Weather App locally.
 
@@ -297,7 +297,7 @@ git clone https://github.com/nitinsharma9266/weather_app.git
 
 ---
 
----
+
 
 ## 🚀 Application Features
 
@@ -367,7 +367,7 @@ The application uses reusable Flutter widgets, rounded cards, subtle shadows, an
 
 ---
 
-## 🔮 Future Improvements
+### 🔮 Future Improvements
 
 The project can be extended with additional features in future versions.
 
@@ -391,7 +391,7 @@ Planned improvements may include:
 
 ---
 
-## 📊 Project Status
+### 📊 Project Status
 
 **Current Status:** 🚧 Active Development / UI Refinement
 
@@ -401,9 +401,9 @@ The project is currently being refined with additional UI improvements, testing,
 
 ---
 
----
 
-## 📦 Download APK
+
+### 📦 Download APK
 
 You can download and install the latest release APK of the Weather App from the link below.
 
@@ -440,7 +440,7 @@ The application demonstrates:
 
 ---
 
-## 💻 Development Environment
+### 💻 Development Environment
 
 The project was developed using:
 
@@ -455,7 +455,7 @@ GitHub
 
 ---
 
-## 👨‍💻 Developer
+### 👨‍💻 Developer
 
 ### Nitin Sharma
 
